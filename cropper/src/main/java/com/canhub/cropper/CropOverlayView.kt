@@ -5,7 +5,6 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.PointF
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Region
@@ -27,7 +26,6 @@ import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
-import kotlin.math.sqrt
 
 /** A custom View representing the crop window and the shaded background outside the crop window.  */
 class CropOverlayView
@@ -52,6 +50,8 @@ class CropOverlayView
                 borderPaint
             } else null
     }
+
+    private var isZooming = false
 
     /** Gesture detector used for multi touch box scaling  */
     private var mScaleDetector: ScaleGestureDetector? = null
@@ -835,6 +835,10 @@ class CropOverlayView
         return if (isEnabled) {
             if (mMultiTouchEnabled) mScaleDetector?.onTouchEvent(event)
             if (mZoomEnabled) mZoomDetector?.onTouchEvent(event)
+            if (isZooming) {
+                isZooming = false
+                return true
+            }
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -1069,6 +1073,7 @@ class CropOverlayView
 
         @TargetApi(Build.VERSION_CODES.HONEYCOMB)
         override fun onScale(detector: ScaleGestureDetector): Boolean {
+            isZooming = true
             mScaleFactor *= detector.scaleFactor
             if (mScaleFactor < 1f) mScaleFactor = 1f
             mZoomChangeListener?.onZoom(mScaleFactor)
