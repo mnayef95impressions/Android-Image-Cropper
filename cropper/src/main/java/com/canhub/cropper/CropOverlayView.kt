@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PointF
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Region
@@ -26,6 +27,7 @@ import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /** A custom View representing the crop window and the shaded background outside the crop window.  */
 class CropOverlayView
@@ -53,9 +55,11 @@ class CropOverlayView
 
     /** Gesture detector used for multi touch box scaling  */
     private var mScaleDetector: ScaleGestureDetector? = null
+    private var mZoomDetector: ScaleGestureDetector? = null
 
     /** Boolean to see if multi touch is enabled for the crop rectangle  */
     private var mMultiTouchEnabled = false
+    private var mZoomEnabled = false
 
     /** Boolean to see if movement via dragging center is enabled for the crop rectangle  */
     private var mCenterMoveEnabled = true
@@ -65,6 +69,9 @@ class CropOverlayView
 
     /** Listener to publicj crop window changes  */
     private var mCropWindowChangeListener: CropWindowChangeListener? = null
+
+    /** Listener to public zoom changes  */
+    private var mZoomChangeListener: ZoomChangeListener? = null
 
     /** Rectangle used for drawing  */
     private val mDrawRect = RectF()
@@ -160,6 +167,11 @@ class CropOverlayView
     /** Set the crop window change listener.  */
     fun setCropWindowChangeListener(listener: CropWindowChangeListener?) {
         mCropWindowChangeListener = listener
+    }
+
+    /** Set the zoom change listener.  */
+    fun setZoomChangeListener(listener: ZoomChangeListener?) {
+        mZoomChangeListener = listener
     }
     /** Get the left/top/right/bottom coordinates of the crop window.  */
     /** Set the left/top/right/bottom coordinates of the crop window.  */
@@ -304,6 +316,18 @@ class CropOverlayView
             mMultiTouchEnabled = multiTouchEnabled
             if (mMultiTouchEnabled && mScaleDetector == null) {
                 mScaleDetector = ScaleGestureDetector(context, ScaleListener())
+            }
+            return true
+        }
+        return false
+    }
+
+    /** Set multi touch functionality to enabled/disabled.  */
+    fun setZoomEnabled(zoomEnabled: Boolean): Boolean {
+        if (mZoomEnabled != zoomEnabled) {
+            mZoomEnabled = zoomEnabled
+            if (mZoomEnabled && mZoomDetector == null) {
+                mZoomDetector = ScaleGestureDetector(context, ZoomListener())
             }
             return true
         }
@@ -810,6 +834,7 @@ class CropOverlayView
         // If this View is not enabled, don't allow for touch interactions.
         return if (isEnabled) {
             if (mMultiTouchEnabled) mScaleDetector?.onTouchEvent(event)
+            if (mZoomEnabled) mZoomDetector?.onTouchEvent(event)
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -997,6 +1022,17 @@ class CropOverlayView
         fun onCropWindowChanged(inProgress: Boolean)
     }
 
+    /** Interface definition for a callback to be invoked when zoom is changing.  */
+    fun interface ZoomChangeListener {
+
+        /**
+         * Called after a change in zoom.
+         *
+         * @param scale is the zoom level
+         */
+        fun onZoom(scale: Float)
+    }
+
     /** Handle scaling the rectangle based on two finger input  */
     private inner class ScaleListener : SimpleOnScaleGestureListener() {
 
@@ -1023,6 +1059,19 @@ class CropOverlayView
                 mCropWindowHandler.setRect(rect)
                 invalidate()
             }
+            return true
+        }
+    }
+
+    var mScaleFactor: Float = 1f
+
+    private inner class ZoomListener : SimpleOnScaleGestureListener() {
+
+        @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+        override fun onScale(detector: ScaleGestureDetector): Boolean {
+            mScaleFactor *= detector.scaleFactor
+            if (mScaleFactor < 1f) mScaleFactor = 1f
+            mZoomChangeListener?.onZoom(mScaleFactor)
             return true
         }
     }

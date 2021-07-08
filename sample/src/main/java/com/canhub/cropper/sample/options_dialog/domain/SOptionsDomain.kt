@@ -6,7 +6,7 @@ import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 
 @Parcelize
-internal data class SOptionsDomain(
+internal data class SOptionsDomain constructor(
     val scaleType: CropImageView.ScaleType,
     val cropShape: CropImageView.CropShape,
     val guidelines: CropImageView.Guidelines,
@@ -14,6 +14,7 @@ internal data class SOptionsDomain(
     val maxZoomLvl: Int,
     val autoZoom: Boolean,
     val multiTouch: Boolean,
+    val zoom: Boolean,
     val centerMove: Boolean,
     val showCropOverlay: Boolean,
     val showProgressBar: Boolean,

@@ -32,7 +32,7 @@ import kotlin.math.sqrt
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 class CropImageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
     FrameLayout(context, attrs),
-    CropWindowChangeListener {
+    CropWindowChangeListener, CropOverlayView.ZoomChangeListener {
 
     /** Image view widget used to show the image for cropping.  */
     private val mImageView: ImageView
@@ -73,6 +73,7 @@ class CropImageView @JvmOverloads constructor(context: Context, attrs: Attribute
     private var mLayoutWidth = 0
     private var mLayoutHeight = 0
     private var mImageResource = 0
+    private var isPinchToZoom = false
 
     /** The initial scale type of the image in the crop image view  */
     private var mScaleType: ScaleType
@@ -114,6 +115,7 @@ class CropImageView @JvmOverloads constructor(context: Context, attrs: Attribute
      * default: true.
      */
     private var mAutoZoomEnabled = true
+    private var mPicnhToZoomEnabled = true
 
     /** The max zoom allowed during cropping  */
     private var mMaxZoom: Int
@@ -218,6 +220,14 @@ class CropImageView @JvmOverloads constructor(context: Context, attrs: Attribute
     /** Set multi touch functionality to enabled/disabled.  */
     fun setMultiTouchEnabled(multiTouchEnabled: Boolean) {
         if (mCropOverlayView!!.setMultiTouchEnabled(multiTouchEnabled)) {
+            handleCropWindowChanged(inProgress = false, animate = false)
+            mCropOverlayView.invalidate()
+        }
+    }
+
+    /** Set multi touch functionality to enabled/disabled.  */
+    fun setZoomEnabled(zoomEnabled: Boolean) {
+        if (mCropOverlayView!!.setZoomEnabled(zoomEnabled)) {
             handleCropWindowChanged(inProgress = false, animate = false)
             mCropOverlayView.invalidate()
         }
@@ -1265,7 +1275,7 @@ class CropImageView @JvmOverloads constructor(context: Context, attrs: Attribute
                         animate = false
                     )
                 }
-            } else if (mAutoZoomEnabled || mZoom > 1) {
+            } else if (mAutoZoomEnabled || mZoom > 1 && !mPicnhToZoomEnabled) {
                 var newZoom = 0f
                 // keep the cropping window covered area to 50%-65% of zoomed sub-area
                 if (mZoom < mMaxZoom && cropRect.width() < width * 0.5f && cropRect.height() < height * 0.5f) {
@@ -1402,7 +1412,9 @@ class CropImageView @JvmOverloads constructor(context: Context, attrs: Attribute
             // apply to zoom offset translate and update the crop rectangle to offset correctly
             mImageMatrix.postTranslate(mZoomOffsetX * scaleX, mZoomOffsetY * scaleY)
             cropRect.offset(mZoomOffsetX * scaleX, mZoomOffsetY * scaleY)
-            mCropOverlayView.cropWindowRect = cropRect
+            if (!isPinchToZoom) {
+                mCropOverlayView.cropWindowRect = cropRect
+            }
             mapImagePointsByImageMatrix()
             mCropOverlayView.invalidate()
             // set matrix to apply
@@ -1934,6 +1946,7 @@ class CropImageView @JvmOverloads constructor(context: Context, attrs: Attribute
         mImageView.scaleType = ImageView.ScaleType.MATRIX
         mCropOverlayView = v.findViewById(R.id.CropOverlayView)
         mCropOverlayView.setCropWindowChangeListener(this)
+        mCropOverlayView.setZoomChangeListener(this)
         mCropOverlayView.setInitialAttributeValues(options)
         mProgressBar = v.findViewById(R.id.CropProgressBar)
         setProgressBarVisibility()
@@ -1945,5 +1958,17 @@ class CropImageView @JvmOverloads constructor(context: Context, attrs: Attribute
         if (listener != null && !inProgress) listener.onCropOverlayReleased(cropRect)
         val movedListener = mOnSetCropOverlayMovedListener
         if (movedListener != null && inProgress) movedListener.onCropOverlayMoved(cropRect)
+    }
+
+    override fun onZoom(scale: Float) {
+        isPinchToZoom = true
+        mZoom = scale
+        applyImageMatrix(
+            width = width.toFloat(),
+            height = height.toFloat(),
+            center = false,
+            animate = false
+        )
+        isPinchToZoom = false
     }
 }

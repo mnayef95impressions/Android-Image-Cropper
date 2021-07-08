@@ -123,6 +123,7 @@ internal class SCropImageViewFragment :
                 setAspectRatio(options.ratio.first, options.ratio.second)
             }
             setMultiTouchEnabled(options.multiTouch)
+            setZoomEnabled(options.zoom)
             setCenterMoveEnabled(options.centerMove)
             isShowCropOverlay = options.showCropOverlay
             isShowProgressBar = options.showProgressBar
