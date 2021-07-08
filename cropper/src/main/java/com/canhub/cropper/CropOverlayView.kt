@@ -835,22 +835,28 @@ class CropOverlayView
         return if (isEnabled) {
             if (mMultiTouchEnabled) mScaleDetector?.onTouchEvent(event)
             if (mZoomEnabled) mZoomDetector?.onTouchEvent(event)
-            if (isZooming) {
-                isZooming = false
-                return true
-            }
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    if (isZooming) {
+                        return true
+                    }
                     onActionDown(event.x, event.y)
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (isZooming) {
+                        isZooming = false
+                        return true
+                    }
                     parent.requestDisallowInterceptTouchEvent(false)
                     onActionUp()
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    if (isZooming) {
+                        return true
+                    }
                     onActionMove(event.x, event.y)
                     parent.requestDisallowInterceptTouchEvent(true)
                     true
@@ -1034,7 +1040,7 @@ class CropOverlayView
          *
          * @param scale is the zoom level
          */
-        fun onZoom(scale: Float)
+        fun onZoom(scale: Float, focusX: Float, focusY: Float)
     }
 
     /** Handle scaling the rectangle based on two finger input  */
@@ -1076,7 +1082,7 @@ class CropOverlayView
             isZooming = true
             mScaleFactor *= detector.scaleFactor
             if (mScaleFactor < 1f) mScaleFactor = 1f
-            mZoomChangeListener?.onZoom(mScaleFactor)
+            mZoomChangeListener?.onZoom(mScaleFactor, detector.focusX, detector.focusY)
             return true
         }
     }

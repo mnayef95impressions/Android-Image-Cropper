@@ -1371,51 +1371,51 @@ class CropImageView @JvmOverloads constructor(context: Context, attrs: Attribute
             )
             mapImagePointsByImageMatrix()
             mImageMatrix.mapRect(cropRect)
-            if (center) {
-                // set the zoomed area to be as to the center of cropping window as possible
-                mZoomOffsetX =
-                    if (width > BitmapUtils.getRectWidth(mImagePoints)) 0f
-                    else max(
-                        min(
-                            width / 2 - cropRect.centerX(),
-                            -BitmapUtils.getRectLeft(mImagePoints)
-                        ),
-                        getWidth() - BitmapUtils.getRectRight(mImagePoints)
-                    ) / scaleX
-
-                mZoomOffsetY =
-                    if (height > BitmapUtils.getRectHeight(mImagePoints)) 0f
-                    else max(
-                        min(
-                            height / 2 - cropRect.centerY(),
-                            -BitmapUtils.getRectTop(mImagePoints)
-                        ),
-                        getHeight() - BitmapUtils.getRectBottom(mImagePoints)
-                    ) / scaleY
-            } else {
-                // adjust the zoomed area so the crop window rectangle will be inside the area in case it
-                // was moved outside
-                mZoomOffsetX = (
-                    min(
-                        max(mZoomOffsetX * scaleX, -cropRect.left),
-                        -cropRect.right + width
-                    ) / scaleX
-                    )
-
-                mZoomOffsetY = (
-                    min(
-                        max(mZoomOffsetY * scaleY, -cropRect.top),
-                        -cropRect.bottom + height
-                    ) / scaleY
-                    )
-            }
-            // apply to zoom offset translate and update the crop rectangle to offset correctly
-            mImageMatrix.postTranslate(mZoomOffsetX * scaleX, mZoomOffsetY * scaleY)
-            cropRect.offset(mZoomOffsetX * scaleX, mZoomOffsetY * scaleY)
             if (!isPinchToZoom) {
+                if (center) {
+                    // set the zoomed area to be as to the center of cropping window as possible
+                    mZoomOffsetX =
+                        if (width > BitmapUtils.getRectWidth(mImagePoints)) 0f
+                        else max(
+                            min(
+                                width / 2 - cropRect.centerX(),
+                                -BitmapUtils.getRectLeft(mImagePoints)
+                            ),
+                            getWidth() - BitmapUtils.getRectRight(mImagePoints)
+                        ) / scaleX
+
+                    mZoomOffsetY =
+                        if (height > BitmapUtils.getRectHeight(mImagePoints)) 0f
+                        else max(
+                            min(
+                                height / 2 - cropRect.centerY(),
+                                -BitmapUtils.getRectTop(mImagePoints)
+                            ),
+                            getHeight() - BitmapUtils.getRectBottom(mImagePoints)
+                        ) / scaleY
+                } else {
+                    // adjust the zoomed area so the crop window rectangle will be inside the area in case it
+                    // was moved outside
+                    mZoomOffsetX = (
+                        min(
+                            max(mZoomOffsetX * scaleX, -cropRect.left),
+                            -cropRect.right + width
+                        ) / scaleX
+                        )
+
+                    mZoomOffsetY = (
+                        min(
+                            max(mZoomOffsetY * scaleY, -cropRect.top),
+                            -cropRect.bottom + height
+                        ) / scaleY
+                        )
+                }
+                // apply to zoom offset translate and update the crop rectangle to offset correctly
+                mImageMatrix.postTranslate(mZoomOffsetX * scaleX, mZoomOffsetY * scaleY)
+                cropRect.offset(mZoomOffsetX * scaleX, mZoomOffsetY * scaleY)
                 mCropOverlayView.cropWindowRect = cropRect
+                mapImagePointsByImageMatrix()
             }
-            mapImagePointsByImageMatrix()
             mCropOverlayView.invalidate()
             // set matrix to apply
             if (animate) {
@@ -1960,7 +1960,7 @@ class CropImageView @JvmOverloads constructor(context: Context, attrs: Attribute
         if (movedListener != null && inProgress) movedListener.onCropOverlayMoved(cropRect)
     }
 
-    override fun onZoom(scale: Float) {
+    override fun onZoom(scale: Float, focusX: Float, focusY: Float) {
         isPinchToZoom = true
         mZoom = scale
         applyImageMatrix(
